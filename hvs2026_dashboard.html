@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HVS 2026 — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f6f5f1;--surface:#fff;--surface2:#f0eeea;--border:#e2dfd9;--border2:#c8c4bc;
+  --text:#18170f;--text2:#6b6860;--text3:#a8a49e;
+  --red:#b83232;--red-bg:#fdf1f0;--red-bd:#f3c4c1;
+  --amber:#a05c10;--amber-bg:#fdf6ec;--amber-bd:#f0d9b0;
+  --green:#1a6e42;--green-bg:#f0faf4;--green-bd:#b3dfc8;
+  --r:10px;--rs:6px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+.page{max-width:980px;margin:0 auto;padding:36px 24px 80px}
+
+/* Header */
+.ph{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.ph-eyebrow{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.ph-title{font-size:21px;font-weight:500;letter-spacing:-.2px}
+.ph-title span{color:var(--text3);font-weight:300}
+.upd{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:4px 13px}
+
+/* Metrics */
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px}
+@media(max-width:780px){.metrics{grid-template-columns:repeat(3,1fr)}} @media(max-width:480px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px 14px;transition:border-color .12s}
+.metric:hover{border-color:var(--border2)}
+.ml{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.mv{font-size:34px;font-weight:300;line-height:1;font-family:'DM Mono',monospace;margin-bottom:3px}
+.ms{font-size:11px;color:var(--text3)}
+.metric.red .mv{color:var(--red)}
+.metric.green .mv{color:var(--green)}
+.pbar{height:2px;background:var(--surface2);border-radius:99px;margin-top:10px;overflow:hidden}
+.pf{height:100%;border-radius:99px;background:var(--green);transition:width .5s ease}
+.pf.red{background:var(--red)}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:3px}
+.tab{flex:1;text-align:center;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text2);border-radius:8px;cursor:pointer;transition:background .12s,color .12s;border:none;background:none}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tab-count{font-family:'DM Mono',monospace;font-size:10px;margin-left:5px;opacity:.7}
+
+/* Panels */
+.panel{display:none}
+.panel.active{display:block}
+
+/* Import bar */
+.import-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.import-bar-label{font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}
+.import-bar input[type=file]{font-size:12px;color:var(--text2)}
+.import-hint{font-size:11px;color:var(--text3);margin-left:auto}
+
+/* Table */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.tbl-search{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center}
+.tbl-search input[type=text]{flex:1;font-family:'DM Sans',sans-serif;font-size:12px;border:1px solid var(--border2);border-radius:var(--rs);padding:6px 10px;background:var(--bg);color:var(--text);outline:none}
+.tbl-search input:focus{border-color:var(--text);background:var(--surface)}
+.tbl-count{font-size:11px;color:var(--text3);white-space:nowrap;font-family:'DM Mono',monospace}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-weight:500;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:8px 14px 7px;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0}
+td{padding:8px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#faf9f6}
+.mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)}
+.dim{color:var(--text2)}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;border:1px solid;white-space:nowrap}
+.b-hard{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
+.b-soft{background:var(--amber-bg);border-color:var(--amber-bd);color:var(--amber)}
+.b-ok{background:var(--green-bg);border-color:var(--green-bd);color:var(--green)}
+.empty{padding:28px 14px;text-align:center;color:var(--text3);font-size:13px}
+
+/* Visits */
+.visits-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.visits-row label{font-size:12px;font-weight:500;color:var(--text2)}
+.visits-row input[type=number]{font-family:'DM Mono',monospace;font-size:13px;width:110px;border:1px solid var(--border2);border-radius:var(--rs);padding:6px 10px;background:var(--bg);color:var(--text);outline:none}
+.visits-row input:focus{border-color:var(--text)}
+.btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border:1px solid var(--border2);border-radius:var(--rs);background:var(--surface);color:var(--text);cursor:pointer;transition:background .1s,border-color .1s}
+.btn:hover{background:var(--surface2);border-color:var(--text)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#18170f;color:#fff;font-size:12px;font-weight:500;padding:10px 18px;border-radius:var(--rs);opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .2s,transform .2s;z-index:9999}
+.toast.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="ph">
+  <div>
+    <div class="ph-eyebrow">Esemény összesítő</div>
+    <h1 class="ph-title">HVS 2026 <span>— meghívók & regisztrációk</span></h1>
+  </div>
+  <div class="upd" id="upd">Frissítve: —</div>
+</div>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="ml">Kiküldött</div>
+    <div class="mv" id="m-sent">—</div>
+    <div class="ms">meghívott</div>
+  </div>
+  <div class="metric red">
+    <div class="ml">Visszapattant</div>
+    <div class="mv" id="m-bounce">—</div>
+    <div class="ms" id="m-bpct">—</div>
+    <div class="pbar"><div class="pf red" id="pb-b" style="width:0%"></div></div>
+  </div>
+  <div class="metric">
+    <div class="ml">Megnyitották</div>
+    <div class="mv" id="m-opens">—</div>
+    <div class="ms" id="m-opct">unique opens</div>
+    <div class="pbar"><div class="pf" id="pb-o" style="width:0%;background:var(--amber)"></div></div>
+  </div>
+  <div class="metric">
+    <div class="ml">Kattintottak</div>
+    <div class="mv" id="m-clicks">—</div>
+    <div class="ms" id="m-clpct">unique clicks</div>
+    <div class="pbar"><div class="pf" id="pb-c" style="width:0%;background:#6366f1"></div></div>
+  </div>
+  <div class="metric">
+    <div class="ml">Látogatók</div>
+    <div class="mv" id="m-visits">—</div>
+    <div class="ms">unique kattintás</div>
+  </div>
+  <div class="metric green">
+    <div class="ml">Regisztráltak</div>
+    <div class="mv" id="m-regs">—</div>
+    <div class="ms" id="m-cpct">—</div>
+    <div class="pbar"><div class="pf" id="pb-r" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('invited')">Meghívottak <span class="tab-count" id="tc-inv">—</span></button>
+  <button class="tab" onclick="switchTab('bounced')">Visszapattant <span class="tab-count" id="tc-bnc">—</span></button>
+  <button class="tab" onclick="switchTab('opens')">Megnyitók <span class="tab-count" id="tc-opn">—</span></button>
+  <button class="tab" onclick="switchTab('clicks')">Kattintók <span class="tab-count" id="tc-clk">—</span></button>
+  <button class="tab" onclick="switchTab('regs')">Regisztráltak <span class="tab-count" id="tc-reg">—</span></button>
+</div>
+
+<!-- MEGHÍVOTTAK -->
+<div class="panel active" id="p-invited">
+  <div class="tbl-wrap">
+    <div class="tbl-search">
+      <input type="text" id="s-inv" placeholder="Keresés: név, e-mail, cég…" oninput="renderInvited()">
+      <span class="tbl-count" id="cnt-inv">—</span>
+    </div>
+    <div style="max-height:480px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Név</th><th>E-mail</th><th>Cég</th><th>Státusz</th><th>Megnyitás</th><th>Kattintás</th></tr></thead>
+      <tbody id="tb-inv"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- VISSZAPATTANT -->
+<div class="panel" id="p-bounced">
+  <div class="tbl-wrap">
+    <div class="tbl-search">
+      <input type="text" id="s-bnc" placeholder="Keresés…" oninput="renderBounced()">
+      <span class="tbl-count" id="cnt-bnc">—</span>
+    </div>
+    <div style="max-height:480px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Név</th><th>E-mail</th><th>Cég</th><th>Típus</th><th>Ok</th></tr></thead>
+      <tbody id="tb-bnc"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- MEGNYITÓK -->
+<div class="panel" id="p-opens">
+  <div class="tbl-wrap">
+    <div class="tbl-search">
+      <input type="text" id="s-opn" placeholder="Keresés: név, e-mail, cég…" oninput="renderOpens()">
+      <span class="tbl-count" id="cnt-opn">—</span>
+    </div>
+    <div style="max-height:480px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Név</th><th>E-mail</th><th>Cég</th><th>Kattintott is</th></tr></thead>
+      <tbody id="tb-opn"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- KATTINTÓK -->
+<div class="panel" id="p-clicks">
+  <div class="tbl-wrap">
+    <div class="tbl-search">
+      <input type="text" id="s-clk" placeholder="Keresés: név, e-mail, cég…" oninput="renderClicks()">
+      <span class="tbl-count" id="cnt-clk">—</span>
+    </div>
+    <div style="max-height:480px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Név</th><th>E-mail</th><th>Cég</th><th>Regisztrált</th></tr></thead>
+      <tbody id="tb-clk"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- REGISZTRÁLTAK -->
+<div class="panel" id="p-regs">
+  <div class="tbl-wrap">
+    <div class="tbl-search">
+      <input type="text" id="s-reg" placeholder="Keresés: név, e-mail, cég…" oninput="renderRegs()">
+      <span class="tbl-count" id="cnt-reg">—</span>
+    </div>
+    <div style="max-height:480px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Név</th><th>E-mail</th><th>Cég</th><th>Regisztrálás dátuma</th></tr></thead>
+      <tbody id="tb-reg"></tbody></table>
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let state;
+
+let state;
+try{const s=localStorage.getItem('hvs2026v3');state=s?JSON.parse(s):JSON.parse(JSON.stringify(SEED));}
+catch(e){state=JSON.parse(JSON.stringify(SEED));}
+
+function persist(){try{localStorage.setItem('hvs2026v3',JSON.stringify(state));}catch(e){}}
+
+// ── Render metrics ────────────────────────────────────────────────
+function renderMetrics(){
+  const bounced=state.invited.filter(x=>x.status.includes('Bounce'));
+  const opened=state.invited.filter(x=>x.opened);
+  const clicked=state.invited.filter(x=>x.clicked);
+  const sent=state.invited.length;
+  document.getElementById('m-sent').textContent=sent;
+  document.getElementById('m-bounce').textContent=bounced.length;
+  document.getElementById('m-opens').textContent=opened.length;
+  document.getElementById('m-clicks').textContent=clicked.length;
+  document.getElementById('m-visits').textContent=clicked.length||state.visits||'—';
+  document.getElementById('m-regs').textContent=state.regs.length;
+  document.getElementById('upd').textContent='Frissítve: '+(state.updated||'—');
+  const bp=sent?((bounced.length/sent)*100).toFixed(1):0;
+  document.getElementById('m-bpct').textContent=bp+'% visszapattanás';
+  document.getElementById('pb-b').style.width=Math.min(bp*4,100)+'%';
+  const op=sent?((opened.length/sent)*100).toFixed(1):0;
+  document.getElementById('m-opct').textContent=op+'% open rate';
+  document.getElementById('pb-o').style.width=Math.min(op,100)+'%';
+  const cl=sent?((clicked.length/sent)*100).toFixed(1):0;
+  document.getElementById('m-clpct').textContent=cl+'% click rate';
+  document.getElementById('pb-c').style.width=Math.min(cl,100)+'%';
+  const vis=clicked.length||state.visits||0;
+  if(vis>0&&state.regs.length>0){
+    const cp=((state.regs.length/vis)*100).toFixed(1);
+    document.getElementById('m-cpct').textContent=cp+'% konverzió';
+    document.getElementById('pb-r').style.width=Math.min(cp,100)+'%';
+  } else {
+    document.getElementById('m-cpct').textContent='—';
+    document.getElementById('pb-r').style.width='0%';
+  }
+  document.getElementById('tc-inv').textContent=sent;
+  document.getElementById('tc-bnc').textContent=bounced.length;
+  document.getElementById('tc-opn').textContent=opened.length;
+  document.getElementById('tc-clk').textContent=clicked.length;
+  document.getElementById('tc-reg').textContent=state.regs.length;
+}
+
+// ── Render tables ─────────────────────────────────────────────────
+function q(id){return (document.getElementById(id).value||'').toLowerCase();}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderInvited(){
+  const sq=q('s-inv');
+  const rows=state.invited.filter(x=>!sq||(x.name+x.email+x.company).toLowerCase().includes(sq));
+  document.getElementById('cnt-inv').textContent=rows.length+' / '+state.invited.length+' rekord';
+  const tb=document.getElementById('tb-inv');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="5" class="empty">Nincs találat.</td></tr>';return;}
+  tb.innerHTML=rows.map((r,i)=>{
+    const sc=r.status==='Delivered'?'b-ok':r.status==='Hard Bounce'?'b-hard':'b-soft';
+    const op=r.opened?'<span class="badge b-ok">✓ igen</span>':'<span style="color:var(--text3);font-size:11px">—</span>';
+    const cl=r.clicked?'<span class="badge b-ok">✓ igen</span>':'<span style="color:var(--text3);font-size:11px">—</span>';
+    return`<tr><td class="mono">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email)}</td><td class="dim">${esc(r.company)}</td><td><span class="badge ${sc}">${esc(r.status)}</span></td><td>${op}</td><td>${cl}</td></tr>`;
+  }).join('');
+}
+
+function renderBounced(){
+  const sq=q('s-bnc');
+  const all=state.invited.filter(x=>x.status.includes('Bounce'));
+  const rows=all.filter(x=>!sq||(x.name+x.email+x.company+x.detail).toLowerCase().includes(sq));
+  document.getElementById('cnt-bnc').textContent=rows.length+' / '+all.length+' rekord';
+  const tb=document.getElementById('tb-bnc');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" class="empty">Nincs visszapattant meghívó.</td></tr>';return;}
+  tb.innerHTML=rows.map((r,i)=>{
+    const sc=r.status==='Hard Bounce'?'b-hard':'b-soft';
+    return`<tr><td class="mono">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email)}</td><td class="dim">${esc(r.company)}</td><td><span class="badge ${sc}">${esc(r.status)}</span></td><td class="dim" style="font-size:11px">${esc(r.detail)}</td></tr>`;
+  }).join('');
+}
+
+function renderOpens(){
+  const sq=q('s-opn');
+  const all=state.invited.filter(x=>x.opened);
+  const regEmails=new Set(state.regs.map(r=>r.email.toLowerCase()));
+  const rows=all.filter(x=>!sq||(x.name+x.email+x.company).toLowerCase().includes(sq));
+  document.getElementById('cnt-opn').textContent=rows.length+' / '+all.length+' rekord';
+  const tb=document.getElementById('tb-opn');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="5" class="empty">Nincs megnyitó.</td></tr>';return;}
+  tb.innerHTML=rows.map((r,i)=>{
+    const cl=r.clicked?'<span class="badge b-ok">✓ igen</span>':'<span style="color:var(--text3);font-size:11px">—</span>';
+    return`<tr><td class="mono">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email)}</td><td class="dim">${esc(r.company)}</td><td>${cl}</td></tr>`;
+  }).join('');
+}
+
+function renderClicks(){
+  const sq=q('s-clk');
+  const all=state.invited.filter(x=>x.clicked);
+  const regEmails=new Set(state.regs.map(r=>r.email.toLowerCase()));
+  const rows=all.filter(x=>!sq||(x.name+x.email+x.company).toLowerCase().includes(sq));
+  document.getElementById('cnt-clk').textContent=rows.length+' / '+all.length+' rekord';
+  const tb=document.getElementById('tb-clk');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="5" class="empty">Nincs kattintó.</td></tr>';return;}
+  tb.innerHTML=rows.map((r,i)=>{
+    const isReg=regEmails.has(r.email.toLowerCase());
+    const reg=isReg?'<span class="badge b-ok">✓ igen</span>':'<span style="color:var(--text3);font-size:11px">—</span>';
+    return`<tr><td class="mono">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email)}</td><td class="dim">${esc(r.company)}</td><td>${reg}</td></tr>`;
+  }).join('');
+}
+
+function renderRegs(){
+  const sq=q('s-reg');
+  const rows=state.regs.filter(x=>!sq||(x.name+x.email+x.company).toLowerCase().includes(sq));
+  document.getElementById('cnt-reg').textContent=rows.length+' / '+state.regs.length+' rekord';
+  const tb=document.getElementById('tb-reg');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="5" class="empty">Nincs regisztrált.</td></tr>';return;}
+  tb.innerHTML=rows.map((r,i)=>
+    `<tr><td class="mono">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email)}</td><td class="dim">${esc(r.company)}</td><td class="mono" style="font-size:11px">${esc(r.date)}</td></tr>`
+  ).join('');
+}
+
+function renderAll(){renderMetrics();renderInvited();renderBounced();renderOpens();renderClicks();renderRegs();}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ids=['invited','bounced','opens','clicks','regs'];
+    t.classList.toggle('active',ids[i]===id);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+}
+
+// ── CSV parser ────────────────────────────────────────────────────
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/);
+  if(!lines.length)return[];
+  const header=splitLine(lines[0]).map(h=>h.toLowerCase().trim());
+  return lines.slice(1).map(line=>{
+    const vals=splitLine(line);
+    const obj={};
+    header.forEach((h,i)=>{obj[h]=(vals[i]||'').trim();});
+    return obj;
+  }).filter(r=>Object.values(r).some(v=>v.length));
+}
+function splitLine(line){
+  const res=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){res.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  res.push(cur);
+  return res;
+}
+
+// ── Load invite CSVs ──────────────────────────────────────────────
+function loadInviteFiles(input){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  let pending=files.length;
+  const allRows=[];
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{allRows.push(...parseCSV(e.target.result));}catch(err){}
+      if(--pending===0)processInviteRows(allRows);
+    };
+    reader.readAsText(file,'UTF-8');
+  });
+}
+
+function processInviteRows(rows){
+  const unique={};
+  rows.forEach(r=>{
+    const email=(r['email']||'').toLowerCase();
+    if(email&&email.includes('@'))unique[email]=r;
+  });
+  const all=Object.values(unique);
+  if(!all.length){toast('Nem sikerült adatot olvasni.');return;}
+  state.invited=all.map(r=>({
+    name:((r['first name']||r['firstname']||'')+ ' '+(r['last name']||r['lastname']||'')).trim(),
+    email:r['email'],
+    company:r['account']||'',
+    status:r['deliverability']||'',
+    detail:r['details']||r['detail']||''
+  }));
+  state.updated=today();
+  persist();renderAll();
+  toast('✓ Meghívottak frissítve — '+state.invited.length+' rekord');
+  input.value='';
+}
+
+// ── Load reg CSV ──────────────────────────────────────────────────
+function loadRegFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const rows=parseCSV(e.target.result);
+      // Try to detect columns: Név / E-mail / Munkahely / Regisztrálás dátuma
+      const sample=rows[0]||{};
+      const keys=Object.keys(sample);
+      const nameKey=keys.find(k=>k.includes('név')||k.includes('name'))||keys[1];
+      const emailKey=keys.find(k=>k.includes('mail'))||keys[2];
+      const companyKey=keys.find(k=>k.includes('munka')||k.includes('company')||k.includes('account'))||keys[4];
+      const dateKey=keys.find(k=>k.includes('dátum')||k.includes('date'))||keys[11];
+      state.regs=rows.filter(r=>r[emailKey]&&r[emailKey].includes('@')).map(r=>({
+        name:r[nameKey]||'',
+        email:r[emailKey]||'',
+        company:(r[companyKey]||'').trim(),
+        date:(r[dateKey]||'').slice(0,10)
+      }));
+      state.updated=today();
+      persist();renderAll();
+      toast('✓ Regisztráltak frissítve — '+state.regs.length+' fő');
+      input.value='';
+    }catch(err){toast('Hiba: '+err.message);}
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ── Visits ────────────────────────────────────────────────────────
+function saveVisits(){
+  const v=parseInt(document.getElementById('inp-vis').value);
+  if(!isNaN(v)&&v>=0){state.visits=v;state.updated=today();persist();renderAll();toast('✓ Látogatók mentve: '+v);}
+}
+
+function today(){return new Date().toISOString().slice(0,10);}
+
+let toastT;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+async function init(){
+  // ⚙️ BEÁLLÍTÁS: cseréld le a saját GitHub raw URL-edre
+  const DATA_URL = 'https://raw.githubusercontent.com/FELHASZNALO/REPO/main/data.json';
+
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    state = await res.json();
+  } catch(e) {
+    console.warn('Nem sikerült betölteni a data.json-t:', e.message);
+    // fallback: utoljára mentett localStorage adat, vagy üres
+    try {
+      const s = localStorage.getItem('hvs2026v3');
+      state = s ? JSON.parse(s) : {invited:[], regs:[], visits:0, updated:'—'};
+    } catch(_) {
+      state = {invited:[], regs:[], visits:0, updated:'—'};
+    }
+  }
+
+  // cache localStorage-ba
+  try { localStorage.setItem('hvs2026v3', JSON.stringify(state)); } catch(_) {}
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
