@@ -457,23 +457,20 @@ const FALLBACK = {"invited": [{"name": "Orsolya Lénárt", "email": "orsolya.len
 async function init(){
   const DATA_URL = 'https://raw.githubusercontent.com/t0thgellert/hvs/main/data.json';
 
+  // Azonnal betöltjük a beégetett adatot — így soha nem marad üres
+  state = JSON.parse(JSON.stringify(FALLBACK));
+  renderAll();
+
+  // Háttérben megpróbáljuk a friss JSON-t is
   try {
     const res = await fetch(DATA_URL + '?t=' + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     state = await res.json();
     try { localStorage.setItem('hvs2026v3', JSON.stringify(state)); } catch(_) {}
+    renderAll();
   } catch(e) {
-    console.warn('Fetch sikertelen:', e.message);
-    // 1. localStorage cache
-    try {
-      const s = localStorage.getItem('hvs2026v3');
-      state = s ? JSON.parse(s) : FALLBACK;
-    } catch(_) {
-      state = FALLBACK;
-    }
+    console.warn('Fetch sikertelen, FALLBACK adatot mutatjuk:', e.message);
   }
-
-  renderAll();
 }
 
 init();
